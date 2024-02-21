@@ -13,6 +13,10 @@ module ActsAsHashids
       def find(ids = nil, &block)
         return detect(&block) if block.present? && respond_to?(:detect)
 
+        if active_record_relation_or_proxy? && !self.klass.include?(ActsAsHashids::Core)
+          return super
+        end
+
         encoded_ids = Array(ids).map do |id|
           id = id.to_i if Integer(id)
           hashids.encode(id)
@@ -33,6 +37,10 @@ module ActsAsHashids
       end
 
       private
+
+      def active_record_relation_or_proxy?
+        self.is_a?(ActiveRecord::Associations::CollectionProxy) || self.is_a?(ActiveRecord::Relation)
+      end
 
       def raise_record_not_found_exception!(ids, result_size, expected_size)
         if Array(ids).size == 1
